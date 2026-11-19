@@ -267,7 +267,7 @@ public class FrmTestODBC : Form
 	public FrmTestODBC()
 	{
 		__ENCAddToList(this);
-		conStr = MySettingsProperty.Settings.QuickBooksDBConnectionString;
+		conStr = QbPassword.Resolve(MySettingsProperty.Settings.QuickBooksDBConnectionString);
 		AccessConStr = MySettingsProperty.Settings.AccessDatabaseConnectionString;
 		ConnectionString = "";
 		ConnectionString2 = "";
@@ -610,7 +610,7 @@ public class FrmTestODBC : Form
 
 	public void TomProgram(string ReferenceNumber)
 	{
-		OdbcConnection cn = new OdbcConnection("dsn=QuickBooks Data;uid=Admin;pwd=${QB_PASSWORD};");
+		OdbcConnection cn = new OdbcConnection(QbPassword.Resolve("dsn=QuickBooks Data;uid=Admin;pwd=${QB_PASSWORD};"));
 		string mystring = "Select RefNumber,SalesOrderLineSeqNo,SalesOrderLineGroupSeqNo,SalesOrderLineGroupItemGroupRefFullName,SalesOrderLineGroupQuantity,SalesOrderLineItemRefFullName,SalesOrderLineQuantity,TxnDate from SalesOrderLine where RefNumber='" + ReferenceNumber.ToString() + "'";
 		OdbcCommand cmd = new OdbcCommand(mystring, cn);
 		OdbcDataAdapter daQODBC = new OdbcDataAdapter(cmd);

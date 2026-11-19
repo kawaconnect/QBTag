@@ -43,6 +43,7 @@
     </Reference>
     <Reference Include="System.Core" />
     <Reference Include="System.Configuration" />
+    <Reference Include="System.Security" />
     <Reference Include="System.Data" />
   </ItemGroup>
   <ItemGroup>

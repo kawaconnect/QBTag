@@ -286,7 +286,7 @@ public class FrmOrderInfo : Form
 		ConnectionString = "";
 		ConnectionString2 = "";
 		OrderNumber = "";
-		conStr = MySettingsProperty.Settings.QuickBooksDBConnectionString;
+		conStr = QbPassword.Resolve(MySettingsProperty.Settings.QuickBooksDBConnectionString);
 		InitializeComponent();
 	}
 

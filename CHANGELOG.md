@@ -4,6 +4,23 @@ All notable changes to QBTag are recorded here. Versions match the `vX.Y.Z`
 git tags; releases before 3.2.16 were published on GitHub and have no
 entries here.
 
+## [3.3.0] - 2026-11-19
+
+### Added
+- QuickBooks login setup: the installer has a QuickBooks Login page (user and
+  password, or "no password"); the app asks for the login on start when the
+  connection needs one that is not set up, and again if QuickBooks rejects it;
+  `--set-qb-password` (interactive, or `--user`, `--file`, `--none`) and
+  `--clear-qb-password` on the command line. The password is stored encrypted
+  for the computer (DPAPI) in `C:\ProgramData\QBTag`; `QB_USER` and
+  `QB_PASSWORD` environment variables still take precedence.
+- `--doctor` and `--config` show the QuickBooks user and where the password
+  comes from.
+
+### Fixed
+- The `${QB_PASSWORD}` placeholder in the QuickBooks connection string is now
+  filled in. Before, the order screens sent it to QODBC as literal text.
+
 ## [3.2.18] - 2026-10-28
 
 ### Fixed

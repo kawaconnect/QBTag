@@ -99,15 +99,36 @@ jobs fail if any of them is missing.
 
 Releases (installer and portable zip) are published on this project's
 GitLab Releases page. Releases made before the move to GitLab CI were
-published by GitHub Actions on the [GitHub Releases](https://github.com/Deenyoro/QBTag/releases) page.
+published by GitHub Actions on the [GitHub Releases](https://github.com/kawaconnect/QBTag/releases) page.
 
 ## Configuration
 
-The QuickBooks password is **not** stored in source. Set it via the `QB_PASSWORD`
-environment variable before running:
+### QuickBooks login
 
-```
-set QB_PASSWORD=your-quickbooks-password
-```
+QBTag reads sales orders through QODBC and logs in to QuickBooks as a QuickBooks
+user (`Admin` unless you change it). The password is never kept in source or in
+the plain config file. QBTag looks for the login in this order:
 
-If `QB_PASSWORD` is unset the app falls back to the (empty) configured setting.
+1. The `QB_USER` and `QB_PASSWORD` environment variables, if set.
+2. `C:\ProgramData\QBTag\qb-user.txt` and `C:\ProgramData\QBTag\qb-password.dat`.
+   The password file is encrypted with Windows DPAPI for this computer, so it only
+   works on the machine that wrote it.
+3. The older `QuickBooksUserID` / `QuickBooksPassword` settings.
+
+How to set it:
+
+- **Installer:** the QuickBooks Login page asks for the user and password (or
+  tick "This QuickBooks user has no password"). Leave the password empty to
+  set it later.
+- **Portable zip, or later on:** start QBTag. If the connection needs a password
+  and none is set up, it asks for the login and stores it. Or run
+  `QBTag --set-qb-password` from a command prompt (prompts for user and
+  password), or `QBTag --set-qb-password --user Admin --file <path>` to read the
+  password from a file, or `--none` if the user has no password.
+- **Scripts and servers:** set the environment variables instead, e.g.
+  `setx QB_PASSWORD "..."` for the account that runs QBTag.
+
+If QuickBooks rejects the login while QBTag is running, it says so and offers to
+enter the login again. `QBTag --doctor` and `QBTag --config` show which user and
+which password source are in use; `QBTag --clear-qb-password` removes the stored
+password.

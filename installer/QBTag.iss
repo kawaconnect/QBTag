@@ -73,6 +73,8 @@ Source: "{#BuildDir}\QBTag.exe.manifest"; DestDir: "{app}"; Flags: ignoreversion
 
 [Dirs]
 Name: "{localappdata}\QBTag\Log"
+; Machine-wide QuickBooks login (qb-user.txt, qb-password.dat encrypted with DPAPI); users may update it
+Name: "{commonappdata}\QBTag"; Permissions: users-modify
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
@@ -98,11 +100,17 @@ Filename: "{app}\{#MyAppExeName}"; Parameters: "--init-db ""{code:GetDbPath}""";
 ; Set the database path in app config
 Filename: "{app}\{#MyAppExeName}"; Parameters: "--set-db ""{code:GetDbPath}"""; StatusMsg: "Configuring database path..."; Flags: runhidden waituntilterminated
 
+; Store the QuickBooks login (user + password, encrypted for this computer) if one was entered.
+; The password goes through a file in Setup's private temp folder, never on the command line.
+Filename: "{app}\{#MyAppExeName}"; Parameters: "{code:QbLoginParams}"; StatusMsg: "Storing the QuickBooks login..."; Flags: runhidden waituntilterminated; Check: QbLoginWanted
+
 ; Launch app
 Filename: "{app}\{#MyAppExeName}"; Description: "Launch {#MyAppName}"; Flags: nowait postinstall skipifsilent
 
 [Code]
 var
+  QbPage: TInputQueryWizardPage;
+  QbNoPassword: TNewCheckBox;
   DbPage: TWizardPage;
   DbPathEdit: TNewEdit;
   DbBrowseBtn: TNewButton;
@@ -169,6 +177,52 @@ begin
   DbNewBtn.Height := DbPathEdit.Height + 2;
   DbNewBtn.Caption := 'New...';
   DbNewBtn.OnClick := @DbNewClick;
+
+  QbPage := CreateInputQueryPage(DbPage.ID,
+    'QuickBooks Login',
+    'The QuickBooks user and password QBTag connects with.',
+    'QBTag reads sales orders from QuickBooks through QODBC and logs in as this QuickBooks user. ' +
+    'The password is stored encrypted on this computer (Windows DPAPI), never in a plain file. ' +
+    'Leave the password empty to set it later: QBTag asks for it on first start, or run QBTag --set-qb-password.');
+  QbPage.Add('QuickBooks user:', False);
+  QbPage.Add('QuickBooks password:', True);
+  QbPage.Values[0] := 'Admin';
+
+  QbNoPassword := TNewCheckBox.Create(QbPage);
+  QbNoPassword.Parent := QbPage.Surface;
+  QbNoPassword.Top := QbPage.Edits[1].Top + QbPage.Edits[1].Height + 12;
+  QbNoPassword.Left := QbPage.Edits[1].Left;
+  QbNoPassword.Width := QbPage.SurfaceWidth;
+  QbNoPassword.Caption := 'This QuickBooks user has no password';
+end;
+
+function QbLoginWanted(): Boolean;
+begin
+  Result := QbNoPassword.Checked or (QbPage.Values[1] <> '') or (CompareText(Trim(QbPage.Values[0]), 'Admin') <> 0);
+end;
+
+function QbLoginParams(Param: String): String;
+var
+  PwFile: String;
+  Lines: TArrayOfString;
+begin
+  Result := '--set-qb-password --user "' + Trim(QbPage.Values[0]) + '"';
+  if QbNoPassword.Checked then
+    Result := Result + ' --none'
+  else
+  begin
+    PwFile := ExpandConstant('{tmp}\qb-login.txt');
+    SetArrayLength(Lines, 1);
+    Lines[0] := QbPage.Values[1];
+    SaveStringsToUTF8File(PwFile, Lines, False);
+    Result := Result + ' --file "' + PwFile + '"';
+  end;
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssDone then
+    DeleteFile(ExpandConstant('{tmp}\qb-login.txt'));
 end;
 
 function GetDbPath(Param: String): String;

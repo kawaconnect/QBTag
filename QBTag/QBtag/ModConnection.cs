@@ -22,8 +22,8 @@ internal sealed class ModConnection
 	{
 		string conStr = "dsn=QuickBooks Data;uid=Admin;pwd=${QB_PASSWORD};";
 		string DataSource = MySettingsProperty.Settings.QuickBooksDBDataSource;
-		string UserName = MySettingsProperty.Settings.QuickBooksUserID;
-		string Password = System.Environment.GetEnvironmentVariable("QB_PASSWORD") ?? MySettingsProperty.Settings.QuickBooksPassword;
+		string UserName = QbPassword.GetUser() ?? MySettingsProperty.Settings.QuickBooksUserID;
+		string Password = QbPassword.Get() ?? "";
 		return "dsn=" + DataSource + ";uid=" + UserName + ";pwd=" + Password + ";";
 	}
 

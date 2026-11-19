@@ -321,7 +321,7 @@ internal static class CLI
         try
         {
             string qbDsn = My.MySettingsProperty.Settings.QuickBooksDBDataSource;
-            string qbUser = My.MySettingsProperty.Settings.QuickBooksUserID;
+            string qbUser = QbPassword.EffectiveUser(My.MySettingsProperty.Settings.QuickBooksDBConnectionString);
             string accessDb = FrmConfig.ResolveDbPath(My.MySettingsProperty.Settings.AccessDBDataSource);
             Console.WriteLine("  QB DSN:     " + (string.IsNullOrEmpty(qbDsn) ? "(not set)" : qbDsn));
             Console.WriteLine("  QB User:    " + (string.IsNullOrEmpty(qbUser) ? "(not set)" : qbUser));
@@ -607,6 +607,20 @@ internal static class CLI
                     return 1;
                 }
             }
+            else
+            {
+                // A typo here must not look like success: nothing would be stored.
+                Console.Error.WriteLine(a == "--user" || a == "-user" || a == "--file" || a == "-file"
+                    ? "Missing value after " + args[i] + "."
+                    : "Unknown option: " + args[i]);
+                Console.Error.WriteLine("Usage: QBTag --set-qb-password [--user <name>] [--file <path> | --none]");
+                return 1;
+            }
+        }
+        if (user != null && user.Trim().Length == 0)
+        {
+            Console.Error.WriteLine("The QuickBooks user name is empty.");
+            return 1;
         }
         bool interactive = args.Length == 1;
         if (interactive)
@@ -631,6 +645,7 @@ internal static class CLI
             }
             if (password == null)
             {
+                Console.WriteLine("The stored password was not changed (use --file <path> or --none to set it).");
                 return 0;
             }
             QbPassword.Save(password);
@@ -691,11 +706,9 @@ internal static class CLI
         try
         {
             string qbDataSource = My.MySettingsProperty.Settings.QuickBooksDBDataSource;
-            string qbUser = My.MySettingsProperty.Settings.QuickBooksUserID;
             string accessDb = FrmConfig.ResolveDbPath(My.MySettingsProperty.Settings.AccessDBDataSource);
 
             Console.WriteLine("QuickBooks Data Source: " + (string.IsNullOrEmpty(qbDataSource) ? "(not set)" : qbDataSource));
-            Console.WriteLine("QuickBooks User:       " + (string.IsNullOrEmpty(qbUser) ? "(not set)" : qbUser));
             Console.WriteLine("Access Database:       " + (string.IsNullOrEmpty(accessDb) ? "(not set)" : accessDb));
             Console.WriteLine("QuickBooks Login User: " + QbPassword.EffectiveUser(My.MySettingsProperty.Settings.QuickBooksDBConnectionString) + (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("QB_USER")) ? "" : " (QB_USER)"));
             Console.WriteLine("QuickBooks Password:   " + QbPasswordStatus());

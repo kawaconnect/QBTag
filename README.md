@@ -26,8 +26,8 @@ registers with QuickBooks under the application name `ABANAKI`.
 - QuickBooks SDK 12.0 (QBFC12).
 - Crystal Reports runtime for .NET Framework 2.0 (`CRRedist2008_x86.msi`).
 - Microsoft Jet 4.0 OLE DB provider (part of Windows) for the Access database.
-- QODBC driver for QuickBooks: only needed for the QODBC connection (see
-  [QuickBooks login](#quickbooks-login)).
+- QODBC driver for QuickBooks: optional, only needed for QODBC connections
+  (see [QuickBooks ODBC login](#quickbooks-odbc-login-optional)).
 
 The installer carries .NET 4.0, the QuickBooks SDK, QODBC and the Crystal
 Reports runtime and installs whichever are missing.
@@ -46,9 +46,7 @@ Run `QBTag-Setup-X.Y.Z.exe` as an administrator. It asks for:
 2. **Tag Database Location**: the path of an existing `usman.mdb`, or a folder
    for a new one (**New...**). Local and UNC paths work. The default is
    `%LocalAppData%\QBTag\usman.mdb`.
-3. **QuickBooks Login**: see [QuickBooks login](#quickbooks-login). Leave it
-   as it is to skip.
-4. **Prerequisites**: QODBC and the QuickBooks SDK are offered when they are
+3. **Prerequisites**: QODBC and the QuickBooks SDK are offered when they are
    not installed. The QODBC setup shows its own wizard.
 
 The database path and the database itself are set up for the Windows account
@@ -56,17 +54,18 @@ that runs the installer. If you install with a different administrator account
 than the one that will use QBTag, set the path again as that user
 (**Tools > Configure Databases**, or `QBTag --set-db <path>`).
 
-Uninstalling removes the program and the stored QuickBooks login. The tag
+Uninstalling removes the program and the stored QuickBooks ODBC login, if
+one was set. The tag
 database, the logs and the per-user settings are left in place.
 
 ### Upgrading
 
-Run the new installer over the old version. Per-user settings are stored per
-program version, so after an upgrade the database path and the list of added
-reports start from the defaults again: enter the database path on the
-installer's Tag Database Location page (or set it afterwards) and add custom
-reports again. The database itself, `Product.xml` and the stored QuickBooks
-login are kept.
+Run the new installer over the old version. The database, `Product.xml` and a
+stored QuickBooks ODBC login are kept. From 3.3.1 on, per-user settings (the
+database path and the list of added reports) are copied from the previous
+version the first time the new version starts from the same folder; an
+upgrade from 3.3.0 or older also carries them over. The installer's Tag Database Location page still sets
+the path for the account that runs the installer.
 
 ### Portable zip
 
@@ -113,16 +112,14 @@ command, prints to the console and exits with 0 on success or 1 on failure.
 |---|---|
 | `--help`, `-h` | List the commands |
 | `--version`, `-v` | Print the version |
-| `--doctor` | Check program files, folders, QuickBooks login, database, QuickBooks connection, settings and the last logged error. Start here when something is wrong |
+| `--doctor` | Check program files, folders, database, QuickBooks connection, settings and the last logged error, and show the optional QuickBooks ODBC login. Start here when something is wrong |
 | `--connect` | Test the QuickBooks SDK connection |
 | `--disconnect` | Close the QuickBooks SDK connection |
 | `--status` | Show install, log and database paths and which program files are present |
-| `--config` | Show the QuickBooks data source, database path, QuickBooks login user and where the password comes from |
+| `--config` | Show the QuickBooks data source, database path and the optional QuickBooks ODBC login (not set, or the user and where the password comes from) |
 | `--init-db [path]` | Create the Access database (default `%LocalAppData%\QBTag\usman.mdb`); does nothing if it exists |
 | `--test-db` | Open the database and list its tables with row counts |
 | `--set-db <path>` | Set the database path for the current Windows user |
-| `--set-qb-password` | Store the QuickBooks login for this computer (see below) |
-| `--clear-qb-password` | Remove the stored QuickBooks password |
 | `--list-orders` | List the orders in the database |
 | `--list-parts` | List the configured part types |
 | `--add-report <path>` | Add a Crystal Reports template (`.rpt`) to the report list |
@@ -133,60 +130,41 @@ command, prints to the console and exits with 0 on success or 1 on failure.
 
 ## Configuration
 
-### QuickBooks login
+### QuickBooks ODBC login (optional)
 
-The order screens read sales orders through the QuickBooks SDK session, which
-QuickBooks itself authorises (see [First start](#first-start)); no password is
-involved there. The login described here is the QuickBooks user and password
-for the QODBC connection string, `dsn=QuickBooks Data;uid=Admin;pwd=${QB_PASSWORD};`
-by default. QBTag fills in the user and the `${QB_PASSWORD}` placeholder when
-it builds that connection.
+QBTag does not need a QuickBooks password. The order screens read sales orders
+through the QuickBooks SDK session, which QuickBooks itself authorises (see
+[First start](#first-start)). The login described here is only used for QODBC
+connections, with the connection string
+`dsn=QuickBooks Data;uid=Admin;pwd=${QB_PASSWORD};` by default: QBTag fills in
+the user and the `${QB_PASSWORD}` placeholder when it builds that connection.
 
-The password is never kept in source or in the plain config file. QBTag looks
-for the login in this order:
+To set it, open **Tools > Configure Databases**. The **QuickBooks ODBC login
+(optional)** section shows whether a login is set; **Set...** asks for the user
+and password (or "This user has no password"), **Clear** removes them. Both
+take effect at once.
 
-1. The `QB_USER` and `QB_PASSWORD` environment variables, if set.
+QBTag looks for the login in this order:
+
+1. The `QB_USER` and `QB_PASSWORD` environment variables, if set. For scripts
+   and servers, for example `setx QB_PASSWORD "..."` for the account that runs
+   QBTag.
 2. `C:\ProgramData\QBTag\qb-user.txt` (plain text, the user name) and
    `C:\ProgramData\QBTag\qb-password.dat` (the password, encrypted with
    Windows DPAPI for this computer, so it only works on the machine that
-   wrote it).
-3. The older `QuickBooksPassword` setting in `QBTag.exe.config` or the user's
-   settings file, and the `uid=` in the connection string (`Admin`).
+   wrote it). This is what **Set...** writes.
+3. The older `QuickBooksPassword` setting (empty by default), and the `uid=`
+   in the connection string (`Admin`).
 
-How to set it:
-
-- **Installer:** the QuickBooks Login page takes the user and password, or
-  tick "This QuickBooks user has no password". If you leave the password empty
-  and the user as `Admin`, nothing is stored.
-- **Command line (installed or portable):**
-  - `QBTag --set-qb-password` asks for the user and the password (hidden
-    input; Enter records "no password").
-  - `QBTag --set-qb-password --user Admin --file C:\path\pw.txt` reads the
-    password from a file (a line break at the end is ignored). Delete the
-    file afterwards.
-  - `QBTag --set-qb-password --user Admin --none` records that the user has no
-    password.
-  - `--user <name>` on its own changes the user and keeps the password.
-  - There is no option that takes the password itself, so it does not end up
-    in the command history or the process list.
-- **In the app:** if the connection string needs a password and none is found
-  in any of the three places, QBTag asks for the login when it starts and
-  stores it. The shipped `QBTag.exe.config` still carries a value in the old
-  `QuickBooksPassword` setting, which counts as "found", so on a new computer
-  do not wait for this prompt: use the installer page or the command line.
-- **Scripts and servers:** set the environment variables instead, for example
-  `setx QB_PASSWORD "..."` for the account that runs QBTag.
-
-`QBTag --config` and `QBTag --doctor` show the user and where the password
-comes from (`QB_PASSWORD environment variable`, `stored encrypted on this
-computer`, `legacy config setting` or `NOT SET`). `QBTag --clear-qb-password`
-removes the stored password.
+`QBTag --config` and `QBTag --doctor` show the login as `Not set`, or the user
+and where the password comes from. A missing login is not reported as a
+problem.
 
 Who can write the stored login: the installer creates `C:\ProgramData\QBTag`
 so that every Windows user of the computer can change it. With the portable
 zip the folder is created by whoever stores the login first, and other
-non-administrator users can then read it but not replace it; run the command
-as an administrator in that case.
+non-administrator users can then read it but not replace it; save it once as
+an administrator in that case.
 
 ### Tag database
 
@@ -207,10 +185,10 @@ is, QBTag stores its path.
 | Path | Contents |
 |---|---|
 | `<install folder>\QBTag.exe.config` | Default settings |
-| `%LocalAppData%\Abanaki\QBTag.exe_...\<version>\user.config` | Per-user settings: database path, reports. Shown by `--config`, cleared by `--reset-config` |
+| `%LocalAppData%\Abanaki\QBTag.exe_...\<version>\user.config` | Per-user settings: database path, reports. Shown by `--config`, cleared by `--reset-config`, copied from the previous version on the first start after an upgrade |
 | `%LocalAppData%\QBTag\usman.mdb` | Default tag database |
 | `%LocalAppData%\QBTag\Log\ErrorLog*.log` | Logs (`QBTag --logs`) |
-| `C:\ProgramData\QBTag\qb-user.txt`, `qb-password.dat` | Stored QuickBooks login |
+| `C:\ProgramData\QBTag\qb-user.txt`, `qb-password.dat` | Optional QuickBooks ODBC login (only if one was set) |
 | `<install folder>\Product.xml` | Product list (kept on upgrade) |
 
 ## Troubleshooting
@@ -229,8 +207,8 @@ Run `QBTag --doctor` first, then `QBTag --logs`.
 | Report window fails to load | The Crystal Reports runtime is missing: run the installer again, or install `CRRedist2008_x86.msi` |
 | Database errors, or `--doctor` shows "Database opens FAIL" | Check the path with `QBTag --config`, that the file is reachable and writable, then `QBTag --test-db`. `QBTag --init-db <path>` creates a new one |
 | The installer's database path is not used | It was saved for the administrator account that ran the installer. Set it again as the normal user (`QBTag --set-db <path>`) |
-| "The password could not be saved" | The current user cannot write to `C:\ProgramData\QBTag`. Run `QBTag --set-qb-password` as an administrator, or use `QB_PASSWORD` |
-| `--set-qb-password` prints nothing in a redirected or scheduled run | QBTag is a windowed program that attaches to the console it was started from. Check the exit code, or run it from an open command prompt |
+| "The login could not be saved" (Configure Databases) | The current Windows user cannot write to `C:\ProgramData\QBTag`. Start QBTag once as an administrator and set it there, or use `QB_USER` and `QB_PASSWORD` |
+| A command prints nothing in a redirected or scheduled run | QBTag is a windowed program that attaches to the console it was started from. Check the exit code, or run it from an open command prompt |
 
 ## Security notes
 

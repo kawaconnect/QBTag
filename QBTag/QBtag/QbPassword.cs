@@ -9,12 +9,13 @@ using QBtag.My;
 namespace QBtag;
 
 /// <summary>
-/// The QuickBooks (QODBC) password. Never kept in source or in the plain config file.
-/// Where it comes from, first match wins:
+/// The optional QuickBooks login for QODBC connections. The order screens read QuickBooks through
+/// the QuickBooks SDK (QBFC), which ignores it; only the ODBC code paths use Resolve().
+/// Never kept in source or in the plain config file. Where the password comes from, first match wins:
 ///   1. the QB_PASSWORD environment variable (servers, scripted or portable runs)
 ///   2. %ProgramData%\QBTag\qb-password.dat, encrypted with Windows DPAPI for this computer
-///      (written by the installer, by "QBTag --set-qb-password", or by the prompt in the app)
-///   3. the legacy QuickBooksPassword setting
+///      (written from Tools > Configure Databases)
+///   3. the legacy QuickBooksPassword setting (empty by default)
 /// The QuickBooks connection string carries the placeholder ${QB_PASSWORD}; Resolve() fills it in.
 /// </summary>
 internal static class QbPassword
@@ -122,7 +123,7 @@ internal static class QbPassword
 			}
 			catch (Exception ex)
 			{
-				Logs.Log.Add("QuickBooks password file could not be read (" + ex.Message + "). Set it again with QBTag --set-qb-password.");
+				Logs.Log.Add("QuickBooks password file could not be read (" + ex.Message + "). Set it again under Tools > Configure Databases.");
 			}
 		}
 		string setting = SafeSetting();
@@ -147,10 +148,36 @@ internal static class QbPassword
 		return true;
 	}
 
-	/// <summary>True when the connection string expects a password and none has been set up.</summary>
-	public static bool Missing(string connectionString)
+	/// <summary>Remove the stored user and password. Returns true when anything was removed.</summary>
+	public static bool ClearAll()
 	{
-		return connectionString != null && connectionString.Contains(Placeholder) && Get() == null;
+		bool removed = Clear();
+		if (File.Exists(UserPath))
+		{
+			File.Delete(UserPath);
+			removed = true;
+		}
+		return removed;
+	}
+
+	/// <summary>One line for the settings window: what is set, without the password itself.</summary>
+	public static string Describe()
+	{
+		string user = GetUser();
+		string source = Source;
+		if (user == null && source == "none")
+		{
+			return "Not set.";
+		}
+		string pw;
+		switch (source)
+		{
+			case "environment": pw = "password from the QB_PASSWORD environment variable"; break;
+			case "stored": pw = Get() == "" ? "no password" : "password stored encrypted on this computer"; break;
+			case "setting": pw = "password from the legacy QuickBooksPassword setting"; break;
+			default: pw = "no password set"; break;
+		}
+		return "Set: user " + (user ?? "(from the connection string)") + ", " + pw + ".";
 	}
 
 	/// <summary>The connection string with the placeholder replaced by the password (empty when none is set).</summary>
@@ -175,21 +202,14 @@ internal static class QbPassword
 		return connectionString.Replace(Placeholder, Get() ?? "");
 	}
 
-	/// <summary>True when an ODBC error looks like a rejected or missing login.</summary>
-	public static bool LooksLikeLoginError(Exception ex)
-	{
-		string m = (ex?.ToString() ?? "").ToLowerInvariant();
-		return m.Contains("password") || m.Contains("login") || m.Contains("logon") || m.Contains("authenticat");
-	}
-
 	/// <summary>
-	/// Ask for the password in a small dialog and store it. Returns true when something was saved.
+	/// Ask for the QODBC user and password in a small dialog and store them. Returns true when something was saved.
 	/// </summary>
 	public static bool Prompt(IWin32Window owner, string reason)
 	{
 		using Form f = new Form
 		{
-			Text = "QuickBooks login",
+			Text = "QuickBooks ODBC login (optional)",
 			FormBorderStyle = FormBorderStyle.FixedDialog,
 			StartPosition = FormStartPosition.CenterScreen,
 			MinimizeBox = false,
@@ -202,29 +222,29 @@ internal static class QbPassword
 			Left = 12,
 			Top = 12,
 			Width = 396,
-			Height = 64,
-			Text = reason + "\r\n\r\nQBTag uses this QuickBooks login for the QODBC connection. The password is stored encrypted on this computer."
+			Height = 96,
+			Text = reason + "\r\n\r\nOnly used for QODBC connections. The order screens read QuickBooks through the QuickBooks SDK and do not use it. The password is stored encrypted on this computer."
 		};
-		Label userLbl = new Label { Left = 12, Top = 84, Width = 120, Text = "QuickBooks user:" };
+		Label userLbl = new Label { Left = 12, Top = 116, Width = 120, Text = "QuickBooks user:" };
 		TextBox user = new TextBox
 		{
 			Left = 132,
-			Top = 81,
+			Top = 113,
 			Width = 276,
 			Text = EffectiveUser(MySettingsProperty.Settings.QuickBooksDBConnectionString)
 		};
-		Label pwLbl = new Label { Left = 12, Top = 116, Width = 120, Text = "Password:" };
+		Label pwLbl = new Label { Left = 12, Top = 148, Width = 120, Text = "Password:" };
 		TextBox pw = new TextBox
 		{
 			Left = 132,
-			Top = 113,
+			Top = 145,
 			Width = 276,
 			UseSystemPasswordChar = true
 		};
 		CheckBox none = new CheckBox
 		{
 			Left = 132,
-			Top = 144,
+			Top = 176,
 			Width = 276,
 			Text = "This user has no password"
 		};
@@ -233,15 +253,15 @@ internal static class QbPassword
 		{
 			Text = "Save",
 			Left = 252,
-			Top = 210,
+			Top = 214,
 			Width = 75,
 			DialogResult = DialogResult.OK
 		};
 		Button cancel = new Button
 		{
-			Text = "Later",
+			Text = "Cancel",
 			Left = 333,
-			Top = 210,
+			Top = 214,
 			Width = 75,
 			DialogResult = DialogResult.Cancel
 		};
@@ -254,12 +274,12 @@ internal static class QbPassword
 		}
 		if (!none.Checked && pw.Text.Length == 0)
 		{
-			MessageBox.Show(owner, "No password entered, nothing was saved.", "QuickBooks password", MessageBoxButtons.OK, MessageBoxIcon.Information);
+			MessageBox.Show(owner, "No password entered, nothing was saved. Tick \"This user has no password\" if that is intended.", "QuickBooks ODBC login", MessageBoxButtons.OK, MessageBoxIcon.Information);
 			return false;
 		}
 		if (user.Text.Trim().Length == 0)
 		{
-			MessageBox.Show(owner, "Enter the QuickBooks user name (Admin by default).", "QuickBooks login", MessageBoxButtons.OK, MessageBoxIcon.Information);
+			MessageBox.Show(owner, "Enter the QuickBooks user name (Admin by default).", "QuickBooks ODBC login", MessageBoxButtons.OK, MessageBoxIcon.Information);
 			return false;
 		}
 		try
@@ -270,55 +290,9 @@ internal static class QbPassword
 		}
 		catch (Exception ex)
 		{
-			MessageBox.Show(owner, "The password could not be saved: " + ex.Message + "\r\n\r\nYou can also set the QB_PASSWORD environment variable, or run QBTag --set-qb-password as an administrator.", "QuickBooks password", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+			MessageBox.Show(owner, "The login could not be saved: " + ex.Message + "\r\n\r\nThe current Windows user cannot write to " + Path.GetDirectoryName(StorePath) + ". Save it once as an administrator, or set the QB_USER and QB_PASSWORD environment variables instead.", "QuickBooks ODBC login", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 			return false;
 		}
-	}
-
-	/// <summary>Called when the app starts: if the password is needed and not set up, ask for it.</summary>
-	public static void EnsureConfigured(IWin32Window owner)
-	{
-		if (Missing(MySettingsProperty.Settings.QuickBooksDBConnectionString))
-		{
-			Prompt(owner, "QBTag needs the QuickBooks password to read sales orders, and none is set up on this computer.");
-		}
-	}
-
-	private static bool _offered;
-
-	/// <summary>
-	/// Run a QuickBooks query. If QuickBooks rejects the login, explain it and offer to enter the
-	/// password (once per session), call onSaved when a new password was stored, then rethrow.
-	/// </summary>
-	public static T Guard<T>(IWin32Window owner, Func<T> query, Action onSaved)
-	{
-		try
-		{
-			return query();
-		}
-		catch (Exception ex) when (LooksLikeLoginError(ex))
-		{
-			Logs.Log.Add(ex);
-			if (OfferAfterLoginError(owner, ex))
-			{
-				onSaved?.Invoke();
-			}
-			throw;
-		}
-	}
-
-	/// <summary>Called after a failed QuickBooks query: explain and offer to (re)enter the password.</summary>
-	public static bool OfferAfterLoginError(IWin32Window owner, Exception ex)
-	{
-		if (!LooksLikeLoginError(ex) || _offered)
-		{
-			return false;
-		}
-		_offered = true;
-		string reason = Get() == null
-			? "QuickBooks refused the connection and no QuickBooks password is set up on this computer."
-			: "QuickBooks refused the connection. The stored QuickBooks password may be wrong or out of date.";
-		return Prompt(owner, reason + " After saving, run the action again.");
 	}
 
 	private static string SafeSetting()

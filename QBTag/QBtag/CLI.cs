@@ -112,12 +112,6 @@ internal static class CLI
             case "reset-config":
                 return ResetConfig();
 
-            case "set-qb-password":
-                return SetQbPassword(args);
-
-            case "clear-qb-password":
-                return ClearQbPassword();
-
             case "log":
             case "logs":
                 return ShowLogs(args);
@@ -147,11 +141,6 @@ internal static class CLI
         Console.WriteLine("  --init-db [path]    Create the Access database");
         Console.WriteLine("  --test-db           Open database and verify all tables");
         Console.WriteLine("  --set-db <path>     Set the Access database path");
-        Console.WriteLine("  --set-qb-password   Store the QuickBooks password for this computer");
-        Console.WriteLine("                      (prompts for user and password; or --user <name>,");
-        Console.WriteLine("                      --file <path> to read the password from a file,");
-        Console.WriteLine("                      --none if the user has no password)");
-        Console.WriteLine("  --clear-qb-password Remove the stored QuickBooks password");
         Console.WriteLine("  --list-orders       List orders in the database");
         Console.WriteLine("  --list-parts        List configured part types");
         Console.WriteLine("  --add-report <path> Add a custom report template");
@@ -226,10 +215,10 @@ internal static class CLI
         PrintCheck("Data dir writable", canWrite, "", ref issues);
         Console.WriteLine();
 
-        // QuickBooks password (needed by the QODBC connection when it uses the ${QB_PASSWORD} placeholder)
-        Console.WriteLine("[QuickBooks password]");
-        bool qbPwOk = !QbPassword.Missing(My.MySettingsProperty.Settings.QuickBooksDBConnectionString);
-        PrintCheck("QuickBooks password", qbPwOk, QbPasswordStatus(), ref issues);
+        // Optional QODBC login. The order screens use the QuickBooks SDK and never need it,
+        // so it is reported but never counted as a problem.
+        Console.WriteLine("[QuickBooks ODBC login (optional)]");
+        Console.WriteLine("  INFO  " + QbOdbcLoginStatus());
         Console.WriteLine();
 
         // 3. Check database
@@ -324,7 +313,7 @@ internal static class CLI
             string qbUser = QbPassword.EffectiveUser(My.MySettingsProperty.Settings.QuickBooksDBConnectionString);
             string accessDb = FrmConfig.ResolveDbPath(My.MySettingsProperty.Settings.AccessDBDataSource);
             Console.WriteLine("  QB DSN:     " + (string.IsNullOrEmpty(qbDsn) ? "(not set)" : qbDsn));
-            Console.WriteLine("  QB User:    " + (string.IsNullOrEmpty(qbUser) ? "(not set)" : qbUser));
+            Console.WriteLine("  QODBC user: " + (string.IsNullOrEmpty(qbUser) ? "(not set)" : qbUser));
             Console.WriteLine("  Access DB:  " + (string.IsNullOrEmpty(accessDb) ? "(not set)" : accessDb));
         }
         catch (Exception ex)
@@ -565,140 +554,9 @@ internal static class CLI
         return 0;
     }
 
-    private static string QbPasswordStatus()
+    private static string QbOdbcLoginStatus()
     {
-        switch (QbPassword.Source)
-        {
-            case "environment": return "set (QB_PASSWORD environment variable)";
-            case "stored": return QbPassword.Get() == "" ? "none (recorded as not needed)" : "set (stored encrypted on this computer)";
-            case "setting": return "set (legacy config setting)";
-            default:
-                return QbPassword.Missing(My.MySettingsProperty.Settings.QuickBooksDBConnectionString)
-                    ? "NOT SET, run QBTag --set-qb-password"
-                    : "not used by the configured connection";
-        }
-    }
-
-    private static int SetQbPassword(string[] args)
-    {
-        string password = null;
-        string user = null;
-        for (int i = 1; i < args.Length; i++)
-        {
-            string a = args[i].ToLowerInvariant();
-            if (a == "--none" || a == "-none")
-            {
-                password = "";
-            }
-            else if ((a == "--user" || a == "-user") && i + 1 < args.Length)
-            {
-                user = args[++i];
-            }
-            else if ((a == "--file" || a == "-file") && i + 1 < args.Length)
-            {
-                string path = args[++i];
-                try
-                {
-                    password = File.ReadAllText(path).TrimEnd('\r', '\n');
-                }
-                catch (Exception ex)
-                {
-                    Console.Error.WriteLine("Could not read " + path + ": " + ex.Message);
-                    return 1;
-                }
-            }
-            else
-            {
-                // A typo here must not look like success: nothing would be stored.
-                Console.Error.WriteLine(a == "--user" || a == "-user" || a == "--file" || a == "-file"
-                    ? "Missing value after " + args[i] + "."
-                    : "Unknown option: " + args[i]);
-                Console.Error.WriteLine("Usage: QBTag --set-qb-password [--user <name>] [--file <path> | --none]");
-                return 1;
-            }
-        }
-        if (user != null && user.Trim().Length == 0)
-        {
-            Console.Error.WriteLine("The QuickBooks user name is empty.");
-            return 1;
-        }
-        bool interactive = args.Length == 1;
-        if (interactive)
-        {
-            string current = QbPassword.EffectiveUser(My.MySettingsProperty.Settings.QuickBooksDBConnectionString);
-            Console.Write("QuickBooks user [" + current + "]: ");
-            string typed = (Console.ReadLine() ?? "").Trim();
-            user = typed.Length == 0 ? current : typed;
-        }
-        if (password == null && interactive)
-        {
-            Console.Write("QuickBooks password (input hidden, Enter for none): ");
-            password = ReadHidden();
-            Console.WriteLine();
-        }
-        try
-        {
-            if (user != null)
-            {
-                QbPassword.SaveUser(user);
-                Console.WriteLine("OK, QuickBooks user: " + user.Trim());
-            }
-            if (password == null)
-            {
-                Console.WriteLine("The stored password was not changed (use --file <path> or --none to set it).");
-                return 0;
-            }
-            QbPassword.Save(password);
-            Console.WriteLine(password.Length == 0
-                ? "OK, recorded that the QuickBooks company file has no password."
-                : "OK, the QuickBooks password is stored encrypted for this computer.");
-            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("QB_PASSWORD")))
-            {
-                Console.WriteLine("NOTE: the QB_PASSWORD environment variable is set and takes precedence.");
-            }
-            return 0;
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine("Could not store the password: " + ex.Message);
-            Console.Error.WriteLine("Run this as an administrator, or set the QB_PASSWORD environment variable instead.");
-            return 1;
-        }
-    }
-
-    private static int ClearQbPassword()
-    {
-        try
-        {
-            Console.WriteLine(QbPassword.Clear() ? "OK, the stored QuickBooks password was removed." : "No stored QuickBooks password.");
-            return 0;
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine("Could not remove it: " + ex.Message);
-            return 1;
-        }
-    }
-
-    private static string ReadHidden()
-    {
-        var sb = new System.Text.StringBuilder();
-        try
-        {
-            while (true)
-            {
-                ConsoleKeyInfo k = Console.ReadKey(true);
-                if (k.Key == ConsoleKey.Enter) break;
-                if (k.Key == ConsoleKey.Backspace) { if (sb.Length > 0) sb.Length--; continue; }
-                if (!char.IsControl(k.KeyChar)) sb.Append(k.KeyChar);
-            }
-        }
-        catch (InvalidOperationException)
-        {
-            // No interactive console (input redirected): read a line instead.
-            return Console.ReadLine() ?? "";
-        }
-        return sb.ToString();
+        return QbPassword.Describe() + " Optional, only used for QODBC connections; set it under Tools > Configure Databases.";
     }
 
     private static int ShowConfig()
@@ -710,8 +568,7 @@ internal static class CLI
 
             Console.WriteLine("QuickBooks Data Source: " + (string.IsNullOrEmpty(qbDataSource) ? "(not set)" : qbDataSource));
             Console.WriteLine("Access Database:       " + (string.IsNullOrEmpty(accessDb) ? "(not set)" : accessDb));
-            Console.WriteLine("QuickBooks Login User: " + QbPassword.EffectiveUser(My.MySettingsProperty.Settings.QuickBooksDBConnectionString) + (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("QB_USER")) ? "" : " (QB_USER)"));
-            Console.WriteLine("QuickBooks Password:   " + QbPasswordStatus());
+            Console.WriteLine("QuickBooks ODBC login: " + QbOdbcLoginStatus());
         }
         catch (Exception ex)
         {
@@ -949,6 +806,9 @@ internal static class CLI
         try
         {
             My.MySettingsProperty.Settings.Reset();
+            // Do not pull the previous version's settings back in at the next start.
+            My.MySettingsProperty.Settings.UpgradeRequired = false;
+            My.MySettingsProperty.Settings.Save();
             Console.WriteLine("Settings reset to defaults.");
             Console.WriteLine("Database path will be set on next launch.");
             return 0;

@@ -4,29 +4,43 @@ All notable changes to QBTag are recorded here. Versions match the `vX.Y.Z`
 git tags; releases before 3.2.16 were published on GitHub and have no
 entries here.
 
-## [Unreleased]
+## [3.3.1] (unreleased)
+
+### Changed
+- The QuickBooks login is no longer asked for. The order screens read
+  QuickBooks through the QuickBooks SDK session, which QuickBooks itself
+  authorises and which never used this login, so the 3.3.0 login setup had no
+  effect on them. Removed: the installer's QuickBooks Login page (and the
+  temporary file it used), the prompt on first start, the offer to re-enter
+  the password after a failed order lookup, and the `--set-qb-password` and
+  `--clear-qb-password` commands.
+- The login is now an optional setting for QODBC connections only: Tools >
+  Configure Databases has a "QuickBooks ODBC login (optional)" section to set
+  or clear the user and password. It is stored as before (DPAPI encrypted in
+  `C:\ProgramData\QBTag`), and the `QB_USER` and `QB_PASSWORD` environment
+  variables still take precedence. A login stored by 3.3.0 keeps working.
+- `--config` and `--doctor` show the ODBC login as optional (not set, or
+  which user and where the password comes from) and no longer count a missing
+  password as a problem.
+- Uninstalling still removes the stored login from `C:\ProgramData\QBTag`.
+- README: QuickBooks login, commands, files and troubleshooting updated to
+  match; requirements, install, usage, command reference, troubleshooting and
+  security notes added.
 
 ### Fixed
+- Per-user settings (database path, added reports) are carried over when
+  QBTag is upgraded. Before, each new version started from the defaults
+  because .NET keeps them in a folder per version. `--reset-config` does not
+  bring the old values back.
+- The old `QuickBooksPassword` setting no longer defaults to a placeholder
+  value ("Usman"); it is empty, and the placeholder is dropped from settings
+  carried over from older versions.
 - Edit Order Info: the "Are you sure" questions before updating, inserting or
   deleting an order now have a Cancel button. Before, the only button was OK,
   so the change could not be called off. The window title is "Edit Order Info".
 - Configure QR Codes: a QR code or product number containing an apostrophe no
   longer makes the "already exists" check fail (the value is passed as a
   parameter). The QODBC and part type queries escape quotes in the same way.
-- `--set-qb-password` stops with an error on an unknown option, a missing
-  value after `--user` or `--file`, or an empty user name. Before, it exited
-  with success and stored nothing. With `--user` alone it now says that the
-  password was left as it was.
-- `--config` and `--doctor` show the QuickBooks user that is actually used,
-  not the old `QuickBooksUserID` setting.
-
-### Changed
-- Installer: the temporary file that hands the QuickBooks password to QBTag is
-  deleted as soon as it has been read, not when the wizard is closed; a double
-  quote in the user name is dropped; uninstalling removes the stored
-  QuickBooks login from `C:\ProgramData\QBTag`.
-- README: requirements, install, usage, command reference, files and folders,
-  troubleshooting and security notes.
 
 ## [3.3.0] - 2026-11-19
 

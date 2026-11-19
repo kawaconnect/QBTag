@@ -60,6 +60,7 @@ internal class MyApplication : WindowsFormsApplicationBase
 	[EditorBrowsable(EditorBrowsableState.Advanced)]
 	internal static void Main(string[] Args)
 	{
+		UpgradeSettingsIfNeeded();
 		if (QBtag.CLI.HasArgs(Args))
 		{
 			int exitCode = QBtag.CLI.Run(Args);
@@ -74,6 +75,41 @@ internal class MyApplication : WindowsFormsApplicationBase
 		{
 		}
 		MyProject.Application.Run(Args);
+	}
+
+	/// <summary>
+	/// Per-user settings (database path, reports) live in a folder named after the version, so
+	/// each new version would start from the defaults. On the first start of a new version, copy
+	/// the previous version's values over (both the window and the command line come through here).
+	/// </summary>
+	private static void UpgradeSettingsIfNeeded()
+	{
+		try
+		{
+			MySettings settings = MySettingsProperty.Settings;
+			if (settings.UpgradeRequired)
+			{
+				settings.Upgrade();
+				// "Usman" was the shipped default of the old QuickBooksPassword setting, not a real login.
+				if (settings.QuickBooksPassword == "Usman")
+				{
+					settings.QuickBooksPassword = "";
+				}
+				settings.UpgradeRequired = false;
+				settings.Save();
+			}
+		}
+		catch (Exception ex)
+		{
+			// A damaged user.config must not stop QBTag from starting; it runs with the defaults.
+			try
+			{
+				Logs.Log.Add("Previous settings could not be carried over: " + ex.Message);
+			}
+			catch
+			{
+			}
+		}
 	}
 
 	[DebuggerStepThrough]

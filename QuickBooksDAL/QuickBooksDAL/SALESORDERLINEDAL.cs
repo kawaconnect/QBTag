@@ -31,7 +31,7 @@ public class SALESORDERLINEDAL : SALESLINEDAL
 
 	public List<SalesOrderLine> SelectSalesOrderLineGroupItems(string ReferenceNumber, string conStr, string AccessconStr)
 	{
-		OdbcCommand cmd = new OdbcCommand("Select RefNumber,SalesOrderLineSeqNo,SalesOrderLineGroupSeqNo,SalesOrderLineGroupItemGroupRefFullName,SalesOrderLineGroupQuantity,SalesOrderLineItemRefFullName,SalesOrderLineQuantity,TxnDate from SalesOrderLine where RefNumber='" + ReferenceNumber.ToString() + "'", DALUTIL.getQuickBooksConnection(conStr));
+		OdbcCommand cmd = new OdbcCommand("Select RefNumber,SalesOrderLineSeqNo,SalesOrderLineGroupSeqNo,SalesOrderLineGroupItemGroupRefFullName,SalesOrderLineGroupQuantity,SalesOrderLineItemRefFullName,SalesOrderLineQuantity,TxnDate from SalesOrderLine where RefNumber='\" + DALUTIL.Quote(ReferenceNumber) + \"'", DALUTIL.getQuickBooksConnection(conStr));
 		return fetchSalesOrderLineGroupItems(cmd);
 	}
 
@@ -55,7 +55,7 @@ public class SALESORDERLINEDAL : SALESLINEDAL
 
 	public List<SalesOrderLine> SelectSingleLineItem(string ReferenceNumber, string conStr, string AccessconStr)
 	{
-		OdbcCommand cmd = new OdbcCommand("Select RefNumber,SalesOrderLineSeqNo,SalesOrderLineGroupItemGroupRefFullName,SalesOrderLineGroupQuantity,SalesOrderLineItemRefFullName,SalesOrderLineQuantity,TxnDate from SalesOrderLine where RefNumber='" + ReferenceNumber.ToString() + "'" + SelectWhereNowSingleLineItem(AccessconStr).ToString() + "", DALUTIL.getQuickBooksConnection(conStr));
+		OdbcCommand cmd = new OdbcCommand("Select RefNumber,SalesOrderLineSeqNo,SalesOrderLineGroupItemGroupRefFullName,SalesOrderLineGroupQuantity,SalesOrderLineItemRefFullName,SalesOrderLineQuantity,TxnDate from SalesOrderLine where RefNumber='\" + DALUTIL.Quote(ReferenceNumber) + \"'" + SelectWhereNowSingleLineItem(AccessconStr).ToString() + "", DALUTIL.getQuickBooksConnection(conStr));
 		return fetchSingleSalesOrderLine(cmd);
 	}
 
@@ -67,7 +67,7 @@ public class SALESORDERLINEDAL : SALESLINEDAL
 
 	public SalesOrderLine SelectSalesOrderLineMotor(string ReferenceNumber, string PartType, string conStr)
 	{
-		OdbcCommand cmd = new OdbcCommand("Select RefNumber,SalesOrderLineSeqNo,SalesOrderLineGroupItemGroupRefFullName,SalesOrderLineGroupQuantity,SalesOrderLineItemRefFullName,SalesOrderLineQuantity,TxnDate from SalesOrderLine where SalesOrderLineItemRefFullName LIKE '%MOTOR%' AND RefNumber='" + ReferenceNumber.ToString() + "'", DALUTIL.getQuickBooksConnection(conStr));
+		OdbcCommand cmd = new OdbcCommand("Select RefNumber,SalesOrderLineSeqNo,SalesOrderLineGroupItemGroupRefFullName,SalesOrderLineGroupQuantity,SalesOrderLineItemRefFullName,SalesOrderLineQuantity,TxnDate from SalesOrderLine where SalesOrderLineItemRefFullName LIKE '%MOTOR%' AND RefNumber='\" + DALUTIL.Quote(ReferenceNumber) + \"'", DALUTIL.getQuickBooksConnection(conStr));
 		return fetchSalesOrderLineMotor(cmd)?[0];
 	}
 

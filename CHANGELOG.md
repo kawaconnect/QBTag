@@ -4,6 +4,30 @@ All notable changes to QBTag are recorded here. Versions match the `vX.Y.Z`
 git tags; releases before 3.2.16 were published on GitHub and have no
 entries here.
 
+## [Unreleased]
+
+### Fixed
+- Edit Order Info: the "Are you sure" questions before updating, inserting or
+  deleting an order now have a Cancel button. Before, the only button was OK,
+  so the change could not be called off. The window title is "Edit Order Info".
+- Configure QR Codes: a QR code or product number containing an apostrophe no
+  longer makes the "already exists" check fail (the value is passed as a
+  parameter). The QODBC and part type queries escape quotes in the same way.
+- `--set-qb-password` stops with an error on an unknown option, a missing
+  value after `--user` or `--file`, or an empty user name. Before, it exited
+  with success and stored nothing. With `--user` alone it now says that the
+  password was left as it was.
+- `--config` and `--doctor` show the QuickBooks user that is actually used,
+  not the old `QuickBooksUserID` setting.
+
+### Changed
+- Installer: the temporary file that hands the QuickBooks password to QBTag is
+  deleted as soon as it has been read, not when the wizard is closed; a double
+  quote in the user name is dropped; uninstalling removes the stored
+  QuickBooks login from `C:\ProgramData\QBTag`.
+- README: requirements, install, usage, command reference, files and folders,
+  troubleshooting and security notes.
+
 ## [3.3.0] - 2026-11-19
 
 ### Added

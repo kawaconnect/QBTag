@@ -491,7 +491,7 @@ public class FrmOrderInfo : Form
 		this.Controls.Add(this.txtOrderNumber);
 		this.Controls.Add(this.Label1);
 		this.Name = "FrmOrderInfo";
-		this.Text = "FrmOrderInfo";
+		this.Text = "Edit Order Info";
 		((System.ComponentModel.ISupportInitialize)this.DataGridViewOrders).EndInit();
 		this.ResumeLayout(false);
 		this.PerformLayout();
@@ -543,7 +543,7 @@ public class FrmOrderInfo : Form
 		Order.Motor = txtMotor.Text;
 		Order.Belt = txtBelt.Text;
 		Order.PartType = txtPartType.Text;
-		if (MessageBox.Show("Are you sure you want to Update Order Number " + txtOrderNumber.Text + "?") == DialogResult.OK)
+		if (MessageBox.Show("Are you sure you want to update Order Number " + txtOrderNumber.Text + "?", "QBTag", MessageBoxButtons.OKCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1) == DialogResult.OK)
 		{
 			OH.UpdateOrderInfo(Order, MySettingsProperty.Settings.AccessDatabaseConnectionString, OrderNumber);
 			GetOrders();
@@ -576,7 +576,7 @@ public class FrmOrderInfo : Form
 			MessageBox.Show("Order Number: " + txtOrderNumber.Text + " already exists");
 			txtOrderNumber.Focus();
 		}
-		else if (MessageBox.Show("Are you sure you want to insert Order Number " + txtOrderNumber.Text + "?") == DialogResult.OK)
+		else if (MessageBox.Show("Are you sure you want to insert Order Number " + txtOrderNumber.Text + "?", "QBTag", MessageBoxButtons.OKCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1) == DialogResult.OK)
 		{
 			OH.AddOrderInfo(Order, MySettingsProperty.Settings.AccessDatabaseConnectionString);
 			GetOrders();
@@ -601,7 +601,7 @@ public class FrmOrderInfo : Form
 			return;
 		}
 		OrderInfoHandler OH = new OrderInfoHandler();
-		if (MessageBox.Show("Are you sure you want to Delete Order Number " + txtOrderNumber.Text + "?") == DialogResult.OK)
+		if (MessageBox.Show("Are you sure you want to delete Order Number " + txtOrderNumber.Text + "?", "QBTag", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) == DialogResult.OK)
 		{
 			OH.DeleteOrderInfo(MySettingsProperty.Settings.AccessDatabaseConnectionString, txtOrderNumber.Text);
 			GetOrders();

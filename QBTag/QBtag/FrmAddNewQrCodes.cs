@@ -741,7 +741,8 @@ public class FrmAddNewQrCodes : Form
 	{
 		int i = 0;
 		DbConnection = new OleDbConnection(MySettingsProperty.Settings.AccessDatabaseConnectionString);
-		DbCommand = new OleDbCommand("select * from tblQrCode where Link='" + QRCode.ToString().Trim() + "'", DbConnection);
+		DbCommand = new OleDbCommand("select * from tblQrCode where Link=@Link", DbConnection);
+		DbCommand.Parameters.AddWithValue("@Link", QRCode.ToString().Trim());
 		DataSet DSQRCodes = new DataSet();
 		DbDataAdapter = new OleDbDataAdapter(DbCommand);
 		DbDataAdapter.SelectCommand = DbCommand;
@@ -757,7 +758,8 @@ public class FrmAddNewQrCodes : Form
 	{
 		int i = 0;
 		DbConnection = new OleDbConnection(MySettingsProperty.Settings.AccessDatabaseConnectionString);
-		DbCommand = new OleDbCommand("select * from tblQrCode where ProductNumber='" + ProductNumber.ToString().Trim() + "'", DbConnection);
+		DbCommand = new OleDbCommand("select * from tblQrCode where ProductNumber=@ProductNumber", DbConnection);
+		DbCommand.Parameters.AddWithValue("@ProductNumber", ProductNumber.ToString().Trim());
 		DataSet DSQRCodes = new DataSet();
 		DbDataAdapter = new OleDbDataAdapter(DbCommand);
 		DbDataAdapter.SelectCommand = DbCommand;

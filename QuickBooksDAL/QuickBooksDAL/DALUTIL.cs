@@ -42,6 +42,15 @@ public class DALUTIL
 		}
 	}
 
+	/// <summary>
+	/// Makes a value safe to place between single quotes in a SQL string
+	/// (doubles any single quote). Use for values pasted into QODBC or Access queries.
+	/// </summary>
+	internal static string Quote(object value)
+	{
+		return Convert.ToString(value ?? "").Replace("'", "''");
+	}
+
 	internal static string gettest(string str)
 	{
 		str += " from Dal Util";

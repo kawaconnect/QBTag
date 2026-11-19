@@ -18,7 +18,7 @@ public class ORDERNUMBERDAL
 
 	public List<OrderNumber> SelectOrderNumbers(string ReferenceNumber, string conStr)
 	{
-		OdbcCommand cmd = new OdbcCommand("Select RefNumber,SalesOrderLineSeqNo,SalesOrderLineGroupSeqNo,SalesOrderLineGroupItemGroupRefFullName,SalesOrderLineGroupQuantity,SalesOrderLineItemRefFullName,SalesOrderLineQuantity,TxnDate from SalesOrderLine where RefNumber='" + ReferenceNumber.ToString() + "'", DALUTIL.getQuickBooksConnection(conStr));
+		OdbcCommand cmd = new OdbcCommand("Select RefNumber,SalesOrderLineSeqNo,SalesOrderLineGroupSeqNo,SalesOrderLineGroupItemGroupRefFullName,SalesOrderLineGroupQuantity,SalesOrderLineItemRefFullName,SalesOrderLineQuantity,TxnDate from SalesOrderLine where RefNumber='\" + DALUTIL.Quote(ReferenceNumber) + \"'", DALUTIL.getQuickBooksConnection(conStr));
 		return fetchOrderNumbers(cmd);
 	}
 

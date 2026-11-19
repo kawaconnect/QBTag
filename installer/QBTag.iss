@@ -76,6 +76,12 @@ Name: "{localappdata}\QBTag\Log"
 ; Machine-wide QuickBooks login (qb-user.txt, qb-password.dat encrypted with DPAPI); users may update it
 Name: "{commonappdata}\QBTag"; Permissions: users-modify
 
+[UninstallDelete]
+; The stored QuickBooks login does not outlive the program (upgrades do not run the uninstaller).
+Type: files; Name: "{commonappdata}\QBTag\qb-password.dat"
+Type: files; Name: "{commonappdata}\QBTag\qb-user.txt"
+Type: dirifempty; Name: "{commonappdata}\QBTag"
+
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{group}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"
@@ -101,8 +107,9 @@ Filename: "{app}\{#MyAppExeName}"; Parameters: "--init-db ""{code:GetDbPath}""";
 Filename: "{app}\{#MyAppExeName}"; Parameters: "--set-db ""{code:GetDbPath}"""; StatusMsg: "Configuring database path..."; Flags: runhidden waituntilterminated
 
 ; Store the QuickBooks login (user + password, encrypted for this computer) if one was entered.
-; The password goes through a file in Setup's private temp folder, never on the command line.
-Filename: "{app}\{#MyAppExeName}"; Parameters: "{code:QbLoginParams}"; StatusMsg: "Storing the QuickBooks login..."; Flags: runhidden waituntilterminated; Check: QbLoginWanted
+; The password goes through a file in Setup's private temp folder, never on the command line;
+; the file is deleted as soon as QBTag has read it.
+Filename: "{app}\{#MyAppExeName}"; Parameters: "{code:QbLoginParams}"; StatusMsg: "Storing the QuickBooks login..."; Flags: runhidden waituntilterminated; Check: QbLoginWanted; AfterInstall: DeleteQbLoginFile
 
 ; Launch app
 Filename: "{app}\{#MyAppExeName}"; Description: "Launch {#MyAppName}"; Flags: nowait postinstall skipifsilent
@@ -196,9 +203,18 @@ begin
   QbNoPassword.Caption := 'This QuickBooks user has no password';
 end;
 
+function QbUserName(): String;
+begin
+  // No double quotes: the name is passed as one quoted command-line argument.
+  Result := Trim(QbPage.Values[0]);
+  StringChangeEx(Result, '"', '', True);
+  if Result = '' then
+    Result := 'Admin';
+end;
+
 function QbLoginWanted(): Boolean;
 begin
-  Result := QbNoPassword.Checked or (QbPage.Values[1] <> '') or (CompareText(Trim(QbPage.Values[0]), 'Admin') <> 0);
+  Result := QbNoPassword.Checked or (QbPage.Values[1] <> '') or (CompareText(QbUserName(), 'Admin') <> 0);
 end;
 
 function QbLoginParams(Param: String): String;
@@ -206,7 +222,7 @@ var
   PwFile: String;
   Lines: TArrayOfString;
 begin
-  Result := '--set-qb-password --user "' + Trim(QbPage.Values[0]) + '"';
+  Result := '--set-qb-password --user "' + QbUserName() + '"';
   if QbNoPassword.Checked then
     Result := Result + ' --none'
   else
@@ -219,10 +235,17 @@ begin
   end;
 end;
 
+// Runs right after QBTag has read the file ([Run] AfterInstall), so the password
+// is not left on disk while the final page is shown.
+procedure DeleteQbLoginFile;
+begin
+  DeleteFile(ExpandConstant('{tmp}\qb-login.txt'));
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssDone then
-    DeleteFile(ExpandConstant('{tmp}\qb-login.txt'));
+    DeleteQbLoginFile;
 end;
 
 function GetDbPath(Param: String): String;

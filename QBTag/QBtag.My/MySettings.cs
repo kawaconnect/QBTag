@@ -117,7 +117,7 @@ public sealed class MySettings : ApplicationSettingsBase
 	}
 
 	[DebuggerNonUserCode]
-	[DefaultSettingValue("Usman")]
+	[DefaultSettingValue("")]
 	[UserScopedSetting]
 	public string QuickBooksPassword
 	{
@@ -185,6 +185,25 @@ public sealed class MySettings : ApplicationSettingsBase
 		set
 		{
 			this["PrimaryReport"] = value;
+		}
+	}
+
+	/// <summary>
+	/// True until this version has copied the previous version's per-user settings (Upgrade()).
+	/// Kept in user.config, so a new version starts with True and runs the upgrade once.
+	/// </summary>
+	[UserScopedSetting]
+	[DefaultSettingValue("True")]
+	[DebuggerNonUserCode]
+	public bool UpgradeRequired
+	{
+		get
+		{
+			return Conversions.ToBoolean(this["UpgradeRequired"]);
+		}
+		set
+		{
+			this["UpgradeRequired"] = value;
 		}
 	}
 

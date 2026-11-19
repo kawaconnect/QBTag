@@ -1301,7 +1301,7 @@ public class FrmMain : Form
 	{
 		OrderInfoHandler OH = new OrderInfoHandler();
 		List<Parts> parts = new PartsHandler().GetParts(MySettingsProperty.Settings.AccessDatabaseConnectionString) ?? new List<Parts>();
-		List<SalesOrderLine> SalesOrderLineList = QbPassword.Guard(this, () => new SalesOrderLineHandler().GetSalesOrderLineOrders(OrderNo, Conversions.ToString(conStr), MySettingsProperty.Settings.AccessDatabaseConnectionString), () => conStr = QbPassword.Resolve(MySettingsProperty.Settings.QuickBooksDBConnectionString));
+		List<SalesOrderLine> SalesOrderLineList = new SalesOrderLineHandler().GetSalesOrderLineOrders(OrderNo, Conversions.ToString(conStr), MySettingsProperty.Settings.AccessDatabaseConnectionString);
 		if (SalesOrderLineList == null)
 			return;
 		List<OrderInfo> OrderList = new List<OrderInfo>();
@@ -1450,7 +1450,7 @@ public class FrmMain : Form
 					return;
 				}
 				ProgressProcessing.Value = 30;
-				List<SalesOrderLine> SalesOrderLineList = QbPassword.Guard(this, () => new SalesOrderLineHandler().GetSalesOrderLineOrders(txtOrder.Text, Conversions.ToString(conStr), MySettingsProperty.Settings.AccessDatabaseConnectionString), () => conStr = QbPassword.Resolve(MySettingsProperty.Settings.QuickBooksDBConnectionString));
+				List<SalesOrderLine> SalesOrderLineList = new SalesOrderLineHandler().GetSalesOrderLineOrders(txtOrder.Text, Conversions.ToString(conStr), MySettingsProperty.Settings.AccessDatabaseConnectionString);
 				if (SalesOrderLineList == null)
 				{
 					Interaction.MsgBox("No order found, the order may already be in history", MsgBoxStyle.OkOnly, "Abanaki QB Tag");
@@ -1666,7 +1666,7 @@ public class FrmMain : Form
 					return;
 				}
 				ProgressProcessing.Value = 20;
-				List<SalesOrderLine> SalesOrderLineList = QbPassword.Guard(this, () => new SalesOrderLineHandler().GetSalesOrderLineOrders(txtOrderStart.Text, txtOrderEnd.Text, Conversions.ToString(conStr), MySettingsProperty.Settings.AccessDatabaseConnectionString), () => conStr = QbPassword.Resolve(MySettingsProperty.Settings.QuickBooksDBConnectionString));
+				List<SalesOrderLine> SalesOrderLineList = new SalesOrderLineHandler().GetSalesOrderLineOrders(txtOrderStart.Text, txtOrderEnd.Text, Conversions.ToString(conStr), MySettingsProperty.Settings.AccessDatabaseConnectionString);
 				if (SalesOrderLineList == null)
 				{
 					Interaction.MsgBox("No order found, the order may already be in history", MsgBoxStyle.OkOnly, "Abanaki QB Tag");
@@ -1866,7 +1866,7 @@ public class FrmMain : Form
 					return;
 				}
 				ProgressProcessing.Value = 20;
-				List<SalesOrderLine> SalesOrderLineList = QbPassword.Guard(this, () => new SalesOrderLineHandler().GetSalesOrderLineOrders(dtFrom.Value, dtTo.Value, Conversions.ToString(conStr)), () => conStr = QbPassword.Resolve(MySettingsProperty.Settings.QuickBooksDBConnectionString));
+				List<SalesOrderLine> SalesOrderLineList = new SalesOrderLineHandler().GetSalesOrderLineOrders(dtFrom.Value, dtTo.Value, Conversions.ToString(conStr));
 				if (SalesOrderLineList == null)
 				{
 					Interaction.MsgBox("No order found, the order may already be in history", MsgBoxStyle.OkOnly, "Abanaki QB Tag");
@@ -2271,7 +2271,6 @@ public class FrmMain : Form
 		}
 		SelectPrimaryReport();
 		SetControlsEnabled(false);
-		QbPassword.EnsureConfigured(this);
 		conStr = QbPassword.Resolve(MySettingsProperty.Settings.QuickBooksDBConnectionString);
 		AttemptQBConnection();
 	}

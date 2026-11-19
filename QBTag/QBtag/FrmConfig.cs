@@ -354,6 +354,111 @@ public class FrmConfig : Form
 		InitializeComponent();
 	}
 
+	private GroupBox GbQbOdbcLogin;
+
+	private Label lblQbOdbcStatus;
+
+	/// <summary>
+	/// Optional QuickBooks ODBC login. The order screens read QuickBooks through the QuickBooks SDK,
+	/// so this is only a fallback for QODBC connections. Stored with QbPassword (DPAPI, this computer).
+	/// Called from InitializeComponent before the layout resumes, so it is scaled with the rest.
+	/// </summary>
+	private void AddQbOdbcLoginGroup()
+	{
+		GbQbOdbcLogin = new GroupBox
+		{
+			Name = "GbQbOdbcLogin",
+			Text = "QuickBooks ODBC login (optional)",
+			Location = new Point(12, 210),
+			Size = new Size(284, 112),
+			Font = new Font("Microsoft Sans Serif", 8.25f, FontStyle.Bold, GraphicsUnit.Point, 0),
+			TabIndex = 4,
+			TabStop = false
+		};
+		Font regular = new Font("Microsoft Sans Serif", 8.25f, FontStyle.Regular, GraphicsUnit.Point, 0);
+		Label info = new Label
+		{
+			Font = regular,
+			Location = new Point(9, 18),
+			Size = new Size(268, 40),
+			Text = "Only used for QODBC connections. Order lookups use the QuickBooks SDK and do not need it. Changes are saved at once."
+		};
+		lblQbOdbcStatus = new Label
+		{
+			Name = "lblQbOdbcStatus",
+			Font = regular,
+			Location = new Point(9, 58),
+			Size = new Size(268, 26)
+		};
+		Button btnSet = new Button
+		{
+			Name = "btnQbOdbcSet",
+			Font = regular,
+			Text = "Set...",
+			Location = new Point(121, 84),
+			Size = new Size(75, 23),
+			TabIndex = 0,
+			UseVisualStyleBackColor = true
+		};
+		btnSet.Click += btnQbOdbcSet_Click;
+		Button btnClear = new Button
+		{
+			Name = "btnQbOdbcClear",
+			Font = regular,
+			Text = "Clear",
+			Location = new Point(202, 84),
+			Size = new Size(75, 23),
+			TabIndex = 1,
+			UseVisualStyleBackColor = true
+		};
+		btnClear.Click += btnQbOdbcClear_Click;
+		GbQbOdbcLogin.Controls.AddRange(new Control[] { info, lblQbOdbcStatus, btnSet, btnClear });
+		Controls.Add(GbQbOdbcLogin);
+		btnOk.Location = new Point(155, 330);
+		btnCancel.Location = new Point(225, 330);
+		btnOk.TabIndex = 5;
+		btnCancel.TabIndex = 6;
+		ClientSize = new Size(328, 365);
+		ShowQbOdbcStatus();
+	}
+
+	private void ShowQbOdbcStatus()
+	{
+		try
+		{
+			lblQbOdbcStatus.Text = QbPassword.Describe();
+		}
+		catch (Exception ex)
+		{
+			lblQbOdbcStatus.Text = "Could not read the stored login: " + ex.Message;
+		}
+	}
+
+	private void btnQbOdbcSet_Click(object sender, EventArgs e)
+	{
+		if (QbPassword.Prompt(this, "The QuickBooks user and password for QODBC connections."))
+		{
+			ShowQbOdbcStatus();
+		}
+	}
+
+	private void btnQbOdbcClear_Click(object sender, EventArgs e)
+	{
+		if (MessageBox.Show(this, "Remove the stored QuickBooks ODBC user and password from this computer?\r\n\r\nThe QB_USER and QB_PASSWORD environment variables, if set, are not changed.", "QuickBooks ODBC login", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) != DialogResult.Yes)
+		{
+			return;
+		}
+		try
+		{
+			QbPassword.ClearAll();
+		}
+		catch (Exception ex)
+		{
+			MessageBox.Show(this, "The stored login could not be removed: " + ex.Message, "QuickBooks ODBC login", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+		}
+		ShowQbOdbcStatus();
+	}
+
 	[DebuggerNonUserCode]
 	private static void __ENCAddToList(object value)
 	{
@@ -596,6 +701,7 @@ public class FrmConfig : Form
 		this.Name = "FrmConfig";
 		this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
 		this.Text = "Database Configuration - v" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(3);
+		this.AddQbOdbcLoginGroup();
 		this.GbTabExportDatabase.ResumeLayout(false);
 		this.GbTabExportDatabase.PerformLayout();
 		this.GbPartTypes.ResumeLayout(false);

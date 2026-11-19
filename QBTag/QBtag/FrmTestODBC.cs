@@ -611,7 +611,7 @@ public class FrmTestODBC : Form
 	public void TomProgram(string ReferenceNumber)
 	{
 		OdbcConnection cn = new OdbcConnection(QbPassword.Resolve("dsn=QuickBooks Data;uid=Admin;pwd=${QB_PASSWORD};"));
-		string mystring = "Select RefNumber,SalesOrderLineSeqNo,SalesOrderLineGroupSeqNo,SalesOrderLineGroupItemGroupRefFullName,SalesOrderLineGroupQuantity,SalesOrderLineItemRefFullName,SalesOrderLineQuantity,TxnDate from SalesOrderLine where RefNumber='" + ReferenceNumber.ToString() + "'";
+		string mystring = "Select RefNumber,SalesOrderLineSeqNo,SalesOrderLineGroupSeqNo,SalesOrderLineGroupItemGroupRefFullName,SalesOrderLineGroupQuantity,SalesOrderLineItemRefFullName,SalesOrderLineQuantity,TxnDate from SalesOrderLine where RefNumber='" + ReferenceNumber.ToString().Replace("'", "''") + "'";
 		OdbcCommand cmd = new OdbcCommand(mystring, cn);
 		OdbcDataAdapter daQODBC = new OdbcDataAdapter(cmd);
 		DataSet dsQODBC = new DataSet();

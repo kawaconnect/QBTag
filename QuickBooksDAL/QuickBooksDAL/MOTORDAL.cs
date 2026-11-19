@@ -16,7 +16,7 @@ public class MOTORDAL
 
 	public List<Motor> SelectMotors(string ReferenceNumber, string conStr)
 	{
-		OdbcCommand cmd = new OdbcCommand("Select RefNumber,SalesOrderLineSeqNo,SalesOrderLineGroupSeqNo,SalesOrderLineGroupItemGroupRefFullName,SalesOrderLineGroupQuantity,SalesOrderLineItemRefFullName,SalesOrderLineQuantity,TxnDate from SalesOrderLine where  SalesOrderLineItemRefFullName LIKE '%MOTOR%' AND RefNumber='" + ReferenceNumber.ToString() + "'", DALUTIL.getQuickBooksConnection(conStr));
+		OdbcCommand cmd = new OdbcCommand("Select RefNumber,SalesOrderLineSeqNo,SalesOrderLineGroupSeqNo,SalesOrderLineGroupItemGroupRefFullName,SalesOrderLineGroupQuantity,SalesOrderLineItemRefFullName,SalesOrderLineQuantity,TxnDate from SalesOrderLine where  SalesOrderLineItemRefFullName LIKE '%MOTOR%' AND RefNumber='\" + DALUTIL.Quote(ReferenceNumber) + \"'", DALUTIL.getQuickBooksConnection(conStr));
 		return fetchMotors(cmd);
 	}
 

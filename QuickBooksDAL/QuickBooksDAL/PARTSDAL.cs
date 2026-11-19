@@ -19,7 +19,7 @@ public class PARTSDAL
 
 	public List<Parts> SelectPartTypes(string ReferenceNumber, string conStr)
 	{
-		OdbcCommand cmd = new OdbcCommand("Select RefNumber,SalesOrderLineSeqNo,SalesOrderLineGroupSeqNo,SalesOrderLineGroupItemGroupRefFullName,SalesOrderLineGroupQuantity,SalesOrderLineItemRefFullName,SalesOrderLineQuantity,TxnDate from SalesOrderLine where RefNumber='" + ReferenceNumber.ToString() + "'", DALUTIL.getQuickBooksConnection(conStr));
+		OdbcCommand cmd = new OdbcCommand("Select RefNumber,SalesOrderLineSeqNo,SalesOrderLineGroupSeqNo,SalesOrderLineGroupItemGroupRefFullName,SalesOrderLineGroupQuantity,SalesOrderLineItemRefFullName,SalesOrderLineQuantity,TxnDate from SalesOrderLine where RefNumber='\" + DALUTIL.Quote(ReferenceNumber) + \"'", DALUTIL.getQuickBooksConnection(conStr));
 		return fetchPartTypes(cmd);
 	}
 
@@ -31,7 +31,7 @@ public class PARTSDAL
 
 	public Parts SelectPart(string AccessConstr, string PartType)
 	{
-		OleDbCommand cmd = new OleDbCommand("Select * from Parts where PartType LIKE'%" + PartType + "%'", DALUTIL.getAccessConnection(AccessConstr));
+		OleDbCommand cmd = new OleDbCommand("Select * from Parts where PartType LIKE'%" + DALUTIL.Quote(PartType) + "%'", DALUTIL.getAccessConnection(AccessConstr));
 		return fetchParts(cmd)?[0];
 	}
 
@@ -113,12 +113,12 @@ public class PARTSDAL
 			{
 				while (dr.Read())
 				{
-					wherestr = wherestr + " or SalesOrderLineItemRefFullName like '%" + dr[0].ToString() + "%'";
+					wherestr = wherestr + " or SalesOrderLineItemRefFullName like '%" + DALUTIL.Quote(dr[0]) + "%'";
 				}
 			}
 			else
 			{
-				wherestr = " and (SalesOrderLineItemRefFullName like '%" + dr[0].ToString() + "%'";
+				wherestr = " and (SalesOrderLineItemRefFullName like '%" + DALUTIL.Quote(dr[0]) + "%'";
 			}
 			return wherestr;
 		}
@@ -136,12 +136,12 @@ public class PARTSDAL
 			{
 				while (dr.Read())
 				{
-					wherestr = wherestr + " or SalesOrderLineGroupItemGroupRefFullName like '" + dr[0].ToString() + "%'";
+					wherestr = wherestr + " or SalesOrderLineGroupItemGroupRefFullName like '" + DALUTIL.Quote(dr[0]) + "%'";
 				}
 			}
 			else
 			{
-				wherestr = " and (SalesOrderLineGroupItemGroupRefFullName like '" + dr[0].ToString() + "%'";
+				wherestr = " and (SalesOrderLineGroupItemGroupRefFullName like '" + DALUTIL.Quote(dr[0]) + "%'";
 			}
 			return wherestr;
 		}

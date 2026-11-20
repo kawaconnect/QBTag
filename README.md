@@ -5,6 +5,8 @@ QuickBooks Desktop, turns the order lines into product tags (optionally with QR
 codes) and prints them through Crystal Reports. It was written for Abanaki and
 registers with QuickBooks under the application name `ABANAKI`.
 
+![QBTag main window (Export Data), drawn from the form layout with example values: pick an order, a range of orders or a date range, choose the label report, then Export](docs/images/main-window.png)
+
 ## How it works
 
 1. QBTag opens a session with the company file that is open in QuickBooks

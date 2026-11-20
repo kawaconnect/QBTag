@@ -6,6 +6,10 @@ entries here.
 
 ## [3.3.1] (unreleased)
 
+### Docs
+
+- README: a picture of the main window in `docs/images/`, drawn from the form layout with example values (QBTag itself runs on Windows only).
+
 ### Changed
 - The QuickBooks login is no longer asked for. The order screens read
   QuickBooks through the QuickBooks SDK session, which QuickBooks itself
